@@ -1,0 +1,11 @@
+streamlit==1.29.0
+python-dotenv==1.0.0
+pinecone==2.2.4
+pinecone-client==3.0.0
+PyPDF2==3.0.1
+langchain==0.1.0
+langchain-text-splitters==0.0.1
+langchain-openai==0.0.5
+langchain-pinecone==0.0.1
+openai==1.10.0
+dotenv==0.9.9
