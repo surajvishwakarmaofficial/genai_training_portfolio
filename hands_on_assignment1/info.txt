@@ -1,0 +1,4 @@
+"""
+PDF Chatbot Application
+A Streamlit-based application for processing PDFs and enabling Q&A using Pinecone and Azure OpenAI.
+"""
