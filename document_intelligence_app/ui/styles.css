@@ -1,0 +1,102 @@
+/* css/style.css */
+.main-header {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f77b4;
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #1f77b4;
+}
+.sidebar-header {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f77b4;
+    margin-bottom: 1rem;
+}
+.success-box {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 12px;
+    color: #155724;
+    margin: 10px 0;
+}
+.info-box {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 8px;
+    padding: 12px;
+    color: #0c5460;
+    margin: 10px 0;
+}
+.warning-box {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 12px;
+    color: #856404;
+    margin: 10px 0;
+}
+.chat-user {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 5px 15px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    margin-left: 20%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.chat-assistant {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 15px 15px 15px 5px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    margin-right: 20%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.stButton button {
+    width: 100%;
+    border-radius: 8px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px;
+    transition: all 0.3s ease;
+}
+.stButton button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.uploaded-file {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    border: 2px dashed #667eea;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin: 10px 0;
+    color: #333;
+}
+.provider-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.metric-card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 5px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid #667eea;
+}
+/* Hide Streamlit default elements */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
