@@ -209,3 +209,4 @@ __marimo__/
 ##project repo ignores
 .env
 genai_training_assignments_env
+genai_casestudyenv

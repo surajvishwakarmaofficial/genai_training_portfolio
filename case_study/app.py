@@ -1,140 +1,193 @@
-"""
-Career Counseling AI Assistant
-Uses Google Gemini AI to provide career guidance through conversational AI.
-"""
-
 import os
-from typing import Dict, Any
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableSequence
+import streamlit as st
 from dotenv import load_dotenv
 
-load_dotenv()  # Load environment variables from .env file
+# Import components and utilities
+from src.components.data_processor import process_pdfs, scrape_website
+from src.components.chat_interface import display_chat_history
+from src.utils.llm_helper import get_embeddings_model, get_llm_model, create_conversation_chain, get_custom_prompt_template
+
+load_dotenv()
+
+# Page configuration
+st.set_page_config(
+    page_title="Student Assistant Chatbot",
+    page_icon="🎓",
+    layout="wide"
+)
+
+# Environment variables
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
+DEPLOYMENT_NAME = os.getenv("DEPLOYMENT_NAME")
 
 
-class CareerCounselorAI:
-    """AI-powered career counseling assistant."""
-    
-    def __init__(self, model_name: str = "gemini-2.5-flash"):
-        """Initialize the career counselor AI.
-        
-        Args:
-            model_name: Name of the Gemini model to use
-        """
-        
-        self.model_name = model_name
-        self.api_key = self._get_api_key()
-        self.chain = self._setup_chain()
-    
-    def _get_api_key(self) -> str:
-        """Safely retrieve API key from environment variables."""
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key or api_key == "Enter your api Key":
-            raise ValueError(
-                "Google API key not found. "
-                "Please set GOOGLE_API_KEY in your environment variables or .env file"
-            )
-        return api_key
-    
-    def _create_prompt_template(self) -> ChatPromptTemplate:
-        """Create the chat prompt template for career counseling."""
-        
-        system_message = """You are an AI career counselor assistant that helps users with their career queries. 
-Your responsibilities include:
-- Asking clarifying questions to understand user career goals
-- Recommending suitable roles and learning roadmaps  
-- Providing personalized career guidance based on individual aspirations
-- Tracking market trends and suggesting relevant opportunities
+# Initialize session state
+if 'vectorstore' not in st.session_state:
+    st.session_state.vectorstore = None
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'conversation' not in st.session_state:
+    st.session_state.conversation = None
 
-Start by understanding the user's background, interests, and goals through conversation."""
-        
-        return ChatPromptTemplate.from_messages([
-            ("system", system_message),
-            ("user", "{question}")
-        ])
+# Custom CSS
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #1f77b4;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .chat-message {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .user-message {
+        background-color: #e3f2fd;
+    }
+    .assistant-message {
+        background-color: #f5f5f5;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Title
+st.markdown("<h1 class='main-header'>🎓 Student Assistant Chatbot</h1>", unsafe_allow_html=True)
+
+# Sidebar for configuration
+with st.sidebar:
+    st.header("⚙️ Configuration")
     
-    def _setup_chain(self) -> RunnableSequence:
-        """Set up the LangChain processing pipeline."""
-        
-        prompt = self._create_prompt_template()
-        model = ChatGoogleGenerativeAI(
-            model=self.model_name,
-            google_api_key=self.api_key,
-            temperature=0.7  # Balanced creativity and consistency
+    st.divider()
+    
+    st.header("📚 Data Sources")
+    
+    data_source = st.radio(
+        "Choose data source:",
+        ["Upload PDF", "Scrape Website"]
+    )
+    
+    embeddings_model = get_embeddings_model(AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT)
+
+    if data_source == "Upload PDF":
+        uploaded_files = st.file_uploader(
+            "Upload PDF files",
+            type=['pdf'],
+            accept_multiple_files=True,
+            help="Upload one or more PDF files containing college information"
         )
-        parser = StrOutputParser()
         
-        return prompt | model | parser
+        if st.button("Process PDFs", type="primary"):
+            with st.spinner("Processing PDFs..."):
+                try:
+                    st.session_state.vectorstore = process_pdfs(uploaded_files, embeddings_model)
+                except Exception as e:
+                    st.error(f"Error processing PDFs: {str(e)}")
     
-    def get_guidance(self, question: str) -> str:
-        """Get career guidance for a specific question.
+    else:  # Scrape Website
+        website_url = st.text_input(
+            "College Website URL",
+            placeholder="https://example.edu",
+            help="Enter the URL of your college website"
+        )
         
-        Args:
-            question: The career-related question to ask
-            
-        Returns:
-            AI-generated career guidance response
-        """
-        try:
-            response = self.chain.invoke({"question": question})
-            return response.strip()
-        except Exception as e:
-            return f"Error generating response: {str(e)}"
+        if st.button("Scrape Website", type="primary"):
+            with st.spinner("Scraping website..."):
+                try:
+                    st.session_state.vectorstore = scrape_website(website_url, embeddings_model)
+                except Exception as e:
+                    st.error(f"Error scraping website: {str(e)}")
     
-    def start_conversation(self) -> None:
-        """Start an interactive career counseling session."""
-        print(" Career Counselor AI: Hello! I'm here to help with your career questions.")
-        print("Tell me about your career aspirations or ask me anything!\n")
+    st.divider()
+    
+    if st.button("🗑️ Clear Chat History"):
+        st.session_state.chat_history = []
+        st.session_state.conversation = None
+        st.rerun()
+
+# Main chat interface
+st.header("💬 Chat with Your Student Assistant")
+
+# Display chat history using the component
+chat_container = st.container()
+with chat_container:
+    display_chat_history(st.session_state.chat_history)
+
+# Chat input
+user_question = st.chat_input("Ask me anything about your college...")
+
+if user_question:
+    if st.session_state.vectorstore is None:
+        st.error("⚠️ Please upload a PDF or scrape a website first")
+    else:
+        st.session_state.chat_history.append({
+            "role": "user",
+            "content": user_question
+        })
         
-        while True:
+        with st.spinner("Thinking..."):
             try:
-                user_input = input("You: ").strip()
+                if st.session_state.conversation is None:
+                    llm = get_llm_model(DEPLOYMENT_NAME, AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT)
+                    prompt_template = get_custom_prompt_template()
+                    
+                    st.session_state.conversation = create_conversation_chain(
+                        llm,
+                        st.session_state.vectorstore.as_retriever(search_kwargs={"k": 3}),
+                        prompt_template
+                    )
                 
-                if user_input.lower() in ['quit', 'exit', 'bye', 'goodbye']:
-                    print("\n Career Counselor AI: Thank you for chatting! Wishing you success in your career journey! ")
-                    break
+                response = st.session_state.conversation({
+                    "question": user_question
+                })
                 
-                if not user_input:
-                    print(" Career Counselor AI: Please tell me more about your career questions!")
-                    continue
+                assistant_response = response['answer']
                 
-                print("\n Career Counselor AI: ", end="")
-                response = self.get_guidance(user_input)
-                print(response + "\n")
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "content": assistant_response
+                })
                 
-            except KeyboardInterrupt:
-                print("\n\n Career Counselor AI: Session ended. Good luck with your career!")
-                break
+                st.rerun()
+                
             except Exception as e:
-                print(f"\n Error: {str(e)}")
+                st.error(f"Error generating response: {str(e)}")
 
+# Instructions
+with st.expander("📖 How to Use"):
+    st.markdown("""
+    ### Getting Started:
+    
+    1. **Set Up .env**: Create a `.env` file in the root directory and add your Azure OpenAI credentials.
+    2. **Install Dependencies**: `pip install -r requirements.txt`
+    3. **Choose Data Source**:
+       - **Upload PDF**: Upload PDF files containing college information
+       - **Scrape Website**: Enter your college website URL to scrape data
+    
+    4. **Process Data**: Click the process button to convert data into vector embeddings
+    
+    5. **Start Chatting**: Ask questions about your college in the chat box below
+    
+    ### Example Questions:
+    - What courses are offered?
+    - Tell me about admission requirements
+    - What facilities are available?
+    - What is the fee structure?
+    - Information about scholarships
+    
+    ### Run the Application:
+    ```bash
+    streamlit run src/app.py
+    ```
+    """)
 
-def main():
-    """Main function to demonstrate the career counselor AI."""
-    try:
-        counselor = CareerCounselorAI()
-        
-        # Example single question
-        sample_question = "I'm a computer science graduate with 2 years of experience in web development. I'm interested in AI and machine learning. What career path would you recommend?"
-        
-        print(" Career Counselor AI Demonstration")
-        print("=" * 50)
-        
-        response = counselor.get_guidance(sample_question)
-        print(f"Question: {sample_question}")
-        print(f"Response: {response}")
-        print("=" * 50)
-        
-        # Uncomment the line below for interactive conversation
-        # counselor.start_conversation()
-        
-    except ValueError as e:
-        print(f"Configuration Error: {e}")
-    except Exception as e:
-        print(f"Unexpected Error: {e}")
+# Footer
+st.divider()
+st.markdown("""
+<div style='text-align: center; color: gray;'>
+    <p>Built with LangChain 🦜🔗 and ChromaDB 💾</p>
+</div>
+""", unsafe_allow_html=True)
 
-
-if __name__ == "__main__":
-    main()

@@ -1,0 +1,36 @@
+=========Student Assistant Chatbot for College Information===============
+
+Here are the key functionalities implemented:
+Environment Setup: It loads environment variables (like Azure OpenAI API keys and endpoint information) from a .env file, ensuring sensitive information is kept separate from the code.
+Streamlit UI Configuration:
+Sets up the basic page configuration (title, icon, layout).
+Applies custom CSS for a cleaner look of chat messages.
+Creates a main header and a sidebar for configuration.
+Data Ingestion (Sidebar):
+PDF Upload: Users can upload one or more PDF files. The code reads these PDFs, extracts text, and then deletes the temporary file.
+Website Scraping: Users can provide a college website URL. The code scrapes content from that URL.
+Document Processing: For both PDFs and scraped web content:
+It uses RecursiveCharacterTextSplitter to break down the documents into smaller, manageable chunks (splits) of text. This is crucial for efficient retrieval.
+It then generates embeddings (numerical representations) for these text chunks using Azure OpenAI Embeddings.
+Finally, these embeddings are stored in a Chroma vector store, which acts as a searchable database for the document chunks.
+A "Process PDFs" or "Scrape Website" button triggers this data ingestion and vector store creation.
+Chat Interface (Main Area):
+Displays the chat history, showing both user questions and assistant responses.
+Provides a st.chat_input for users to type their questions.
+Includes a "Clear Chat History" button in the sidebar to reset the conversation.
+Conversational AI Logic:
+When a user asks a question, the code first checks if a vector store has been created (i.e., data has been processed).
+It initializes an Azure Chat OpenAI LLM (your DEPLOYMENT_NAME model) and a ConversationBufferMemory to maintain chat context across turns.
+It uses a custom PromptTemplate to guide the LLM's responses, instructing it to act as a helpful student assistant and to answer based only on the provided context.
+A conversational_retrieval chain is set up. This chain:
+Takes the user's question and retrieves relevant document chunks from the Chroma vector store using the embeddings.
+Passes these retrieved chunks along with the chat history and the current question to the LLM.
+The LLM then generates an answer based on the retrieved information and the conversation context.
+The assistant's response is then added to the chat history and displayed.
+Instructions and Footer: An expandable section (st.expander) provides clear instructions on how to use the application, including dependency installation and running the app. A footer acknowledges the technologies used.
+
+=============
+Project Title: Student Assistant Chatbot for College Information
+Description:
+The Student Assistant Chatbot is an interactive web application designed to provide students with quick and accurate answers to their college-related questions. 
+Built using Streamlit for the user interface and LangChain for the underlying AI logic, this chatbot leverages Retrieval-Augmented Generation (RAG) to deliver contextually relevant responses.
